@@ -1,6 +1,6 @@
-from Kraken.KrakenAPI import KrakenAPI
+from Kraken.kraken_api import KrakenAPI
 
 kraken = KrakenAPI()
 
-result = kraken.get_asset_info('XETH')
-print(result)
+data = kraken.get_ohlc_data_for_asset('XETHZEUR', 1)
+print(data)

@@ -11,9 +11,6 @@ class AssetInfo:
         self.decimals = decimals                    # scaling decimal places
         self.display_decimals = display_decimals    # scaling decimal places for output display
 
-    def __repr__(self):
-        return "Test()"
-
     def __str__(self):
         return f'(alternate_name: {self.alternate_name}, ' \
                f'asset_class: {self.decimals}, ' \
