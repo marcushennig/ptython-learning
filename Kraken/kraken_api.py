@@ -1,27 +1,12 @@
-import urllib.request
-
-import json
 import requests
-import urllib.parse
-
-from Kraken.asset_info import AssetInfo
 from typing import Dict, List
 
+from Kraken.asset_info import AssetInfo
 from Kraken.ohlc_data import OHLCData
 from . import version
 
 
-# private query nonce
-import time
-
-# private query signing
-import hashlib
-import hmac
-import base64
-
 # Check https://github.com/veox/python3-krakenex/tree/master/examples
-
-
 class KrakenAPI:
     """ Maintains a single session between this machine and Kraken.
         Specifying a key/secret pair is optional. If not specified, private
@@ -75,7 +60,7 @@ class KrakenAPI:
     def get_tradable_asset_pair(self, asset_pair: str):
         pass
 
-    def _query(self, url_path: str, data: Dict[str, str], headers = None):
+    def _query(self, url_path: str, data: Dict[str, str], headers=None):
         """ Low-level query handling.
         .. note::
            Use :py:meth:`query_private` or :py:meth:`query_public`
@@ -133,24 +118,22 @@ class KrakenAPI:
 
         return AssetInfo.empty()
 
-    def get_ohlc_data_for_asset(self, asset_pair: str, interval: int) -> List[OHLCData]:
+    def get_ohlc_data_for_asset(self, asset_pair: str, interval: int) -> Dict[int, OHLCData]:
         """Download OHLC data for given asset pair from kraken
         :param asset_pair: asset pair to get OHLC data for
         :param interval: time frame interval in minutes (optional): 1 (default), 5, 15, 30, 60, 240, 1440, 10080, 21600
         :param since: return committed OHLC data since given id (optional.  exclusive)
         """
-
-        values = {'pair': asset_pair, 'interval': interval} #, 'since': since}
+        values = {'pair': asset_pair, 'interval': interval}  # , 'since': since}
         response = self.query_public('OHLC', values)
         data = response['result']
         if asset_pair in data:
             data_points = data[asset_pair]
-            return [OHLCData(time=p[0],
-                             open=p[1],
-                             high=p[2],
-                             low=p[3],
-                             close=p[4],
-                             vwap=p[5],
-                             volume=p[6],
-                             count=p[7]) for p in data_points]
-        return []
+            return {int(p[0]): OHLCData(open_price=float(p[1]),
+                                        high_price=float(p[2]),
+                                        low_price=float(p[3]),
+                                        close_price=float(p[4]),
+                                        volume_weighted_average_price=float(p[5]),
+                                        volume=float(p[6]),
+                                        count=float(p[7])) for p in data_points}
+        return dict()
