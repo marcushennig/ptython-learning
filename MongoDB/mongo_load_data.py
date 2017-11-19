@@ -1,3 +1,4 @@
+
 from pymongo import MongoClient
 import random
 
@@ -47,5 +48,5 @@ def query_data() -> None:
     client.close()
 
 
-# upload_data()
+upload_data()
 query_data()
