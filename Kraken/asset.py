@@ -1,4 +1,4 @@
-class AssetInfo:
+class Asset:
 
     def __init__(self,
                  alternate_name: str,
@@ -19,4 +19,4 @@ class AssetInfo:
 
     @staticmethod
     def empty():
-        return AssetInfo('', '', 0, 0)
+        return Asset('', '', 0, 0)

@@ -1,9 +1,10 @@
 import requests
-from typing import Dict, List
-
-from Kraken.asset_info import AssetInfo
+import logging
+from typing import Dict, List, Any
+from Kraken.asset import Asset
 from Kraken.ohlc_data import OHLCData
 from . import version
+
 
 
 # Check https://github.com/veox/python3-krakenex/tree/master/examples
@@ -36,12 +37,15 @@ class KrakenAPI:
         self.session.headers.update({'User-Agent': 'krakenex/' + version.__version__ + ' (+' + version.__url__ + ')'})
         self.response = None
 
+        logging.info('Init kraken API')
+
         return
 
     def close(self) -> None:
         """ Close this session.
         :returns: None
         """
+        logging.info('Close session')
         self.session.close()
         return
 
@@ -56,9 +60,6 @@ class KrakenAPI:
             self.key = file.readline().strip()
             self.secret = file.readline().strip()
         return
-
-    def get_tradable_asset_pair(self, asset_pair: str):
-        pass
 
     def _query(self, url_path: str, data: Dict[str, str], headers=None):
         """ Low-level query handling.
@@ -81,6 +82,7 @@ class KrakenAPI:
 
         url = self.uri + url_path
 
+        logging.info(f'POST:{url}')
         self.response = self.session.post(url, data=data, headers=headers)
 
         if self.response.status_code not in (200, 201, 202):
@@ -88,7 +90,7 @@ class KrakenAPI:
 
         return self.response.json()
 
-    def query_public(self, method: str, data: Dict[str, str] = None):
+    def query_public(self, method: str, data: Dict[str, Any] = None):
         """ Performs an API query that does not require a valid key/secret pair.
         :param method: API method name
         :type method: str
@@ -103,7 +105,23 @@ class KrakenAPI:
 
         return self._query(url_path, data)
 
-    def get_asset_info(self, asset: str) -> AssetInfo:
+    def get_all_asset_infos(self) -> Dict[str, Asset]:
+        """Get information for a given crypto currency from kraken"""
+
+        response = self.query_public('Assets')
+        logging.info(f'Response: {response}')
+
+        if 'result' in response :
+            result = dict(response['result'])
+            return {key: Asset(alternate_name=value['altname'],
+                               asset_class=value['aclass'],
+                               decimals=int(value['decimals']),
+                               display_decimals=int(value['display_decimals'])) for key, value in result.items()}
+        else:
+            logging.error('Could not find result in response')
+            return {}
+
+    def get_asset_info(self, asset: str) -> Asset:
         """Get information for a given crypto currency from kraken"""
 
         values = {'asset': asset}
@@ -111,12 +129,13 @@ class KrakenAPI:
 
         if asset in response:
             info = response[asset]
-            return AssetInfo(alternate_name=info['altname'],
-                             asset_class=info['aclass'],
-                             decimals=info['decimals'],
-                             display_decimals=info['display_decimals'])
-
-        return AssetInfo.empty()
+            return Asset(alternate_name=info['altname'],
+                         asset_class=info['aclass'],
+                         decimals=int(info['decimals']),
+                         display_decimals=int(info['display_decimals']))
+        else:
+            logging.error(f'Could not find asset {asset} in response')
+            return Asset.empty()
 
     def get_ohlc_data_for_asset(self, asset_pair: str, interval: int) -> Dict[int, OHLCData]:
         """Download OHLC data for given asset pair from kraken
@@ -136,4 +155,12 @@ class KrakenAPI:
                                         volume_weighted_average_price=float(p[5]),
                                         volume=float(p[6]),
                                         count=float(p[7])) for p in data_points}
-        return dict()
+        return {}
+
+
+    def get_ticker(self, asset_pairs: List[str]):
+
+        values = {'pair': asset_pairs}
+        response = self.query_public('Ticker', values)
+
+        return response
